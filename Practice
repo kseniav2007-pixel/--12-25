@@ -2,3 +2,6 @@ Task1
 cat /etc/passwd
 cut -d: -f1 /etc/passwd
 cut -d: -f1 /etc/passwd | sort
+Task2
+cat /etc/protocols
+grep -v '^#' /etc/protocols
