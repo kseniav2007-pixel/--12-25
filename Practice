@@ -5,3 +5,250 @@ cut -d: -f1 /etc/passwd | sort
 Task2
 cat /etc/protocols
 grep -v '^#' /etc/protocols
+Task3
+nano banner
+#!/bin/bash
+
+text="$1"
+length=${#text}
+width=$((length + 2))
+
+border=$(printf '%*s' "$width" '' | tr ' ' '-')
+
+echo "+${border}+"
+echo "| ${text} |"
+echo "+${border}+"
+./banner "Hello from RTU MIREA!"
+Task4
+cat > hello.c <<'EOF'
+#include <stdio.h>
+
+int main(void) {
+    int n = 10;
+    printf("Hello world");
+    return 0;
+}
+EOF
+cat > identifiers <<'EOF'
+#!/bin/bash
+
+grep -oE '[a-zA-Z_][a-zA-Z0-9_]*' "$1" | sort -u
+EOF
+chmod +x identifiers
+./identifiers hello.c
+Task5
+cat > reg <<'EOF'
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 filename"
+    exit 1
+fi
+
+file="$1"
+
+if [ ! -f "$file" ]; then
+    echo "Error: file not found"
+    exit 1
+fi
+
+if ! chmod 755 "$file"; then
+    echo "Error: cannot change permissions"
+    exit 1
+fi
+
+if ! cp "$file" /usr/local/bin/; then
+    echo "Error: cannot copy file"
+    exit 1
+fi
+
+echo "Command installed successfully"
+EOF
+
+chmod +x reg
+./reg banner
+Task6
+cat > check_comments <<'EOF'
+#!/bin/bash
+
+shopt -s nullglob
+
+for file in *.c *.js *.py; do
+    if [ ! -f "$file" ]; then
+        continue
+    fi
+
+    IFS= read -r first_line < "$file" || true
+
+    case "$file" in
+        *.c|*.js)
+            if [[ "$first_line" =~ ^[[:space:]]*(//|/\*) ]]; then
+                echo "$file: comment found"
+            else
+                echo "$file: no comment"
+            fi
+            ;;
+        *.py)
+            if [[ "$first_line" =~ ^[[:space:]]*# ]]; then
+                echo "$file: comment found"
+            else
+                echo "$file: no comment"
+            fi
+            ;;
+    esac
+done
+EOF
+
+chmod +x check_comments
+printf '// Comment\nint main() {}\n' > test.c
+printf 'console.log("Hello");\n' > test.js
+printf '# Python comment\nprint("Hello")\n' > test.py
+./check_comments
+Task7
+cat > duplicates <<'EOF'
+#!/bin/bash
+
+if [ "$#" -ne 1 ] || [ ! -d "$1" ]; then
+    echo "Usage: $0 directory"
+    exit 1
+fi
+
+find "$1" -type f -exec sha256sum -z -- {} + |
+    sort -z |
+    awk -v RS='\0' '
+    {
+        hash = substr($0, 1, 64)
+        file = substr($0, 67)
+
+        if (hash == previous_hash) {
+            if (count == 1) {
+                print previous_file
+            }
+            print file
+            count++
+        } else {
+            if (count > 1) print ""
+            count = 1
+        }
+
+        previous_hash = hash
+        previous_file = file
+    }'
+EOF
+
+chmod +x duplicates
+mkdir -p test_duplicates/subdir
+
+echo "Hello" > test_duplicates/file1.txt
+cp test_duplicates/file1.txt test_duplicates/file2.txt
+cp test_duplicates/file1.txt test_duplicates/subdir/file3.txt
+
+echo "Different text" > test_duplicates/unique.txt
+./duplicates test_duplicates
+Task8
+cat > archive <<'EOF'
+#!/bin/bash
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 directory extension"
+    exit 1
+fi
+
+directory="$1"
+extension="${2#.}"
+
+if [ ! -d "$directory" ]; then
+    echo "Error: directory not found"
+    exit 1
+fi
+
+if [ -z "$extension" ]; then
+    echo "Error: empty extension"
+    exit 1
+fi
+
+archive="archive_${extension}.tar"
+
+if ! find "$directory" -maxdepth 1 -type f -name "*.${extension}" \
+    -printf '%f\0' | tar -cf "$archive" --null -T - -C "$directory"; then
+    echo "Error: archive creation failed"
+    exit 1
+fi
+
+echo "Archive created: $archive"
+EOF
+
+chmod +x archive
+mkdir -p test_archive
+
+echo "First file" > test_archive/file1.txt
+echo "Second file" > test_archive/file2.txt
+echo "Third file" > test_archive/file3.txt
+echo "Python code" > test_archive/program.py
+./archive test_archive txt
+tar -tf archive_txt.tar
+Task9
+cat > replace_spaces <<'EOF'
+#!/bin/bash
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 input_file output_file"
+    exit 1
+fi
+
+input="$1"
+output="$2"
+
+if [ ! -f "$input" ]; then
+    echo "Error: input file not found"
+    exit 1
+fi
+
+if [ "$input" -ef "$output" ]; then
+    echo "Error: input and output must be different files"
+    exit 1
+fi
+
+if ! sed $'s/    /\t/g' "$input" > "$output"; then
+    echo "Error: replacement failed"
+    exit 1
+fi
+
+echo "Replacement completed: $output"
+EOF
+
+chmod +x replace_spaces
+printf 'Hello    World\nOne    Two    Three\nNoSpaces\n' > input.txt
+./replace_spaces input.txt output.txt
+cat -T output.txt
+Task10
+cat > empty_files <<'EOF'
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 directory"
+    exit 1
+fi
+
+directory="$1"
+
+if [ ! -d "$directory" ]; then
+    echo "Error: directory not found"
+    exit 1
+fi
+
+find "$directory" -maxdepth 1 -type f -empty \
+    \( -name "*.txt" -o -name "*.text" \) \
+    -printf '%f\n'
+EOF
+
+chmod +x empty_files
+mkdir -p test_empty
+
+touch test_empty/empty1.txt
+touch test_empty/empty2.txt
+echo "Hello" > test_empty/filled.txt
+touch test_empty/empty3.text
+touch test_empty/empty.py
+./empty_files test_empty
+
