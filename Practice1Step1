@@ -1,0 +1,30 @@
+
+def main():
+    while True:
+        user_input = input("VFS> ").strip()
+
+        if not user_input:
+            continue
+
+        parts = user_input.split()
+        command = parts[0]
+        args = parts[1:]
+
+        if command == "exit":
+            print("Завершение работы VFS.")
+            break
+
+        elif command == "ls":
+            print("Команда: ls")
+            print("Аргументы:", args)
+
+        elif command == "cd":
+            print("Команда: cd")
+            print("Аргументы:", args)
+
+        else:
+            print(f"Ошибка: неизвестная команда {command}")
+
+
+if __name__ == "__main__":
+    main()
