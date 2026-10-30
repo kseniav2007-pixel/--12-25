@@ -1,0 +1,8 @@
+# Проверка стартового скрипта
+
+ls
+ls -l /home
+cd documents
+cd ..
+
+exit
